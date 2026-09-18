@@ -1,0 +1,38 @@
+{
+  "_comentario": "Toda la configuracion en un sitio. Cambiar capital o simbolos es tocar un numero, no codigo.",
+
+  "modo_feed": "real",
+  "_modo_feed": "real = precios reales de Binance | sintetico = camino aleatorio, sin conexion",
+
+  "intervalo_seg": 60,
+  "puerto_dashboard": 8080,
+  "host_dashboard": "127.0.0.1",
+  "_host_dashboard": "127.0.0.1 solo local. Para verlo desde fuera usa una VPN, no lo abras a internet.",
+
+  "exploracion": true,
+  "_exploracion": "Modo agresivo: entra mucho y se equivoca mucho, a proposito, para generar datos variados.",
+  "prob_exploracion": 0.12,
+
+  "motores": {
+    "nucleo": {
+      "capital": "110",
+      "simbolos": ["DOGEUSDT", "SHIBUSDT", "PEPEUSDT", "BONKUSDT"],
+      "max_posiciones": 4,
+      "importe_por_operacion": "12",
+      "max_drawdown_pct": "35",
+      "max_exposicion_pct": "80"
+    },
+    "satelite": {
+      "capital": "40",
+      "simbolos": ["FLOKIUSDT", "WIFUSDT", "MEMEUSDT", "NEIROUSDT"],
+      "max_posiciones": 3,
+      "importe_por_operacion": "8",
+      "max_drawdown_pct": "60",
+      "max_exposicion_pct": "90"
+    }
+  },
+
+  "comision_pct": "0.1",
+  "slippage_pct": "0.15",
+  "_slippage": "Pesimista a proposito. El paper trading es optimista por naturaleza; compensamos al alza."
+}
