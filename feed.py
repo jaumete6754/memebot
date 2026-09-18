@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 from decimal import Decimal
 from typing import Optional
 
-from .types import Vela, ahora_ms
+from modelo import Vela, ahora_ms
 
 # Binance publica los mismos datos en varios hosts. Si uno falla o esta
 # bloqueado geograficamente, probamos el siguiente. data-api.binance.vision es

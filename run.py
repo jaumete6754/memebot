@@ -18,16 +18,16 @@ import time
 from decimal import Decimal
 from pathlib import Path
 
-from memebot.broker import BrokerPapel
-from memebot.dashboard import servir
-from memebot.engine import Bot, ConfigMotor
-from memebot.feed import ErrorFeed, FeedBinance, FeedSintetico
-from memebot.risk import GestorRiesgo, LimitesMotor
-from memebot.store import Store
-from memebot.strategies import CruceMedias, Exploracion, RupturaVolumen
-from memebot.types import Motor
+from broker import BrokerPapel
+from dashboard import servir
+from engine import Bot, ConfigMotor
+from feed import ErrorFeed, FeedBinance, FeedSintetico
+from risk import GestorRiesgo, LimitesMotor
+from store import Store
+from strategies import CruceMedias, Exploracion, RupturaVolumen
+from modelo import Motor
 
-RAIZ = Path(__file__).parent
+RAIZ = Path(__file__).resolve().parent
 
 
 def cargar_config(ruta: Path) -> dict:

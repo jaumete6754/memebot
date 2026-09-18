@@ -1,0 +1,28 @@
+# Base de datos y datos generados: NUNCA van al repositorio.
+# Son tuyos, cambian cada minuto y ensuciarian el historial.
+datos/
+*.db
+*.db-wal
+*.db-shm
+
+# Credenciales. Ahora mismo el proyecto no usa ninguna, pero el dia que
+# exista un .env con claves de API, esta linea es lo que evita el desastre
+# mas clasico del sector: subir las claves a GitHub sin darte cuenta.
+.env
+.env.*
+*.key
+*.pem
+secretos*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editores y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

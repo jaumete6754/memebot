@@ -22,13 +22,13 @@ import traceback
 from decimal import Decimal
 from typing import Optional
 
-from .broker import Broker, ErrorBroker
-from .feed import ErrorFeed, Feed
-from .learn import leccion_de_operacion
-from .risk import GestorRiesgo
-from .strategies import Estrategia, Senal, regimen
-from .store import Store
-from .types import (
+from broker import Broker, ErrorBroker
+from feed import ErrorFeed, Feed
+from learn import leccion_de_operacion
+from risk import GestorRiesgo
+from strategies import Estrategia, Senal, regimen
+from store import Store
+from modelo import (
     Decision,
     Motor,
     MotivoSalida,

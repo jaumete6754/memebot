@@ -36,7 +36,7 @@ EOF
 
 # --- Comprobacion del codigo -------------------------------------------------
 echo "  Comprobando el codigo..."
-python3 -m unittest discover -s tests >/dev/null 2>&1 && \
+python3 -m unittest test_reglas >/dev/null 2>&1 && \
     echo "  Tests OK" || echo "  AVISO: algun test ha fallado, revisalo antes de usarlo"
 
 # --- Wake lock en Termux -----------------------------------------------------

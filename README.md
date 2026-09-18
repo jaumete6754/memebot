@@ -10,9 +10,12 @@ endpoints que usa son públicos.
 En Termux (Android) o en cualquier Linux:
 
 ```bash
-bash instalar.sh
+git clone https://github.com/jaumete6754/memebot.git
+cd memebot
 python3 run.py
 ```
+
+Para actualizar a la última versión: `git pull`.
 
 Después abre `http://localhost:8080` en el navegador.
 
@@ -81,21 +84,28 @@ no soporta.
 
 ## Estructura
 
+Todo al mismo nivel, sin paquetes anidados: más simple de mantener y no depende
+de cómo se hayan subido las carpetas.
+
 ```
-memebot/
-  types.py       dataclasses base (Decimal para el dinero, nunca float)
-  store.py       journal SQLite: decisiones, operaciones, incidentes, posiciones
-  feed.py        FeedBinance (real) y FeedSintetico (pruebas), misma interfaz
-  broker.py      Broker ABC + BrokerPapel con fills pesimistas
-  risk.py        gestor de riesgo con derecho de veto y kill-switch
-  strategies.py  cruce de medias, ruptura con volumen, exploración
-  learn.py       lecciones por operación y estadísticas honestas
-  engine.py      el bucle principal
-  dashboard.py   web de solo lectura, sin dependencias
-run.py           arranque
+run.py           arranque: monta las piezas y lanza el bucle
 config.json      toda la configuración
-tests/           tests de las reglas de hierro
+modelo.py        dataclasses base (Decimal para el dinero, nunca float)
+store.py         journal SQLite: decisiones, operaciones, incidentes, posiciones
+feed.py          FeedBinance (real) y FeedSintetico (pruebas), misma interfaz
+broker.py        Broker ABC + BrokerPapel con fills pesimistas
+risk.py          gestor de riesgo con derecho de veto y kill-switch
+strategies.py    cruce de medias, ruptura con volumen, exploración
+learn.py         lecciones por operación y estadísticas honestas
+engine.py        el bucle principal
+dashboard.py     web de solo lectura, sin dependencias
+test_reglas.py   tests de las reglas de hierro
+datos/           base de datos (se crea sola, no va al repositorio)
 ```
+
+El módulo se llama `modelo.py` y no `types.py` a propósito: un archivo llamado
+`types.py` en la raíz taparía el módulo `types` de la librería estándar de
+Python y provocaría fallos difíciles de diagnosticar.
 
 ## Decisiones de diseño que no son negociables
 
@@ -125,7 +135,7 @@ debe tener retirada desactivada y whitelist de IP.
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest test_reglas -v
 ```
 
 16 tests que cubren separación de presupuestos, kill-switch por drawdown,

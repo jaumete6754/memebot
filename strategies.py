@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
-from .types import Vela
+from modelo import Vela
 
 
 @dataclass

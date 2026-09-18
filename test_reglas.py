@@ -5,22 +5,19 @@ refactor futuro. Cada vez que aparezca un incidente real en produccion, se
 anade aqui un test que lo reproduce: esta suite acaba siendo la memoria de
 todos los fallos que el sistema ha visto.
 
-    python3 -m unittest discover -s tests -v
+    python3 -m unittest test_reglas -v
 """
 
-import sys
 import tempfile
 import unittest
 from decimal import Decimal
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from memebot.broker import BrokerPapel, ErrorBroker          # noqa: E402
-from memebot.learn import leccion_de_operacion               # noqa: E402
-from memebot.risk import GestorRiesgo, LimitesMotor          # noqa: E402
-from memebot.store import Store                              # noqa: E402
-from memebot.types import Motor, MotivoSalida, Operacion     # noqa: E402
+from broker import BrokerPapel, ErrorBroker
+from learn import leccion_de_operacion     
+from risk import GestorRiesgo, LimitesMotor
+from store import Store                    
+from modelo import Motor, MotivoSalida, Operacion     # noqa: E402
 
 
 def _riesgo(nucleo="110", satelite="40") -> GestorRiesgo:
@@ -157,7 +154,7 @@ class TestLecciones(unittest.TestCase):
 
 class TestAprendizajeHonesto(unittest.TestCase):
     def test_muestra_pequena_no_concluye(self):
-        from memebot.learn import Aprendizaje
+        from learn import Aprendizaje
         with tempfile.TemporaryDirectory() as tmp:
             store = Store(Path(tmp) / "t.db")
             for i in range(5):
@@ -171,7 +168,7 @@ class TestAprendizajeHonesto(unittest.TestCase):
 
 class TestPersistencia(unittest.TestCase):
     def test_posiciones_sobreviven_al_reinicio(self):
-        from memebot.types import Posicion
+        from modelo import Posicion
         with tempfile.TemporaryDirectory() as tmp:
             ruta = Path(tmp) / "t.db"
             s1 = Store(ruta)

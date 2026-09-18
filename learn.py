@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Iterable
 
-from .types import MotivoSalida, Operacion
+from modelo import MotivoSalida, Operacion
 
 # Umbrales de tamano muestral. No son magia: por debajo de 30 el intervalo de
 # confianza de una proporcion es tan ancho que casi cualquier valor cabe dentro.

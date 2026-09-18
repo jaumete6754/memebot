@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
-from .types import Motor, Posicion
+from modelo import Motor, Posicion
 
 
 @dataclass

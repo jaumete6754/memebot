@@ -15,15 +15,25 @@ from decimal import Decimal
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
-from .learn import Aprendizaje
-from .types import Motor, ahora_ms
+from learn import Aprendizaje
+from modelo import Motor, ahora_ms
 
 PAGINA = """<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Memebot</title>
+<!-- Permite instalarlo en la pantalla de inicio como si fuera una app.
+     No es un APK: es la propia web, que el sistema abre a pantalla completa. -->
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icono.svg">
+<link rel="apple-touch-icon" href="/icono.svg">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Memebot">
 <style>
   :root {
     --bg:#0e1116; --panel:#161b22; --linea:#262d38; --txt:#e6edf3;
@@ -31,7 +41,9 @@ PAGINA = """<!DOCTYPE html>
     --acento:#58a6ff;
   }
   * { box-sizing:border-box; }
-  body { margin:0; padding:16px; background:var(--bg); color:var(--txt);
+  body { margin:0; background:var(--bg); color:var(--txt);
+         padding:max(16px, env(safe-area-inset-top)) 16px
+                 max(16px, env(safe-area-inset-bottom));
          font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
   h1 { font-size:18px; margin:0 0 4px; }
   h2 { font-size:14px; margin:0 0 12px; color:var(--suave);
@@ -186,6 +198,33 @@ setInterval(refrescar, 10000);
 </html>"""
 
 
+# Icono propio, dibujado a mano: dos velas japonesas sobre fondo oscuro.
+ICONO = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="42" fill="#0e1116"/>
+  <g stroke-linecap="round">
+    <line x1="70" y1="38" x2="70" y2="150" stroke="#3fb950" stroke-width="7"/>
+    <rect x="55" y="62" width="30" height="66" rx="5" fill="#3fb950"/>
+    <line x1="124" y1="52" x2="124" y2="160" stroke="#f85149" stroke-width="7"/>
+    <rect x="109" y="84" width="30" height="52" rx="5" fill="#f85149"/>
+  </g>
+</svg>"""
+
+MANIFEST = {
+    "name": "Memebot",
+    "short_name": "Memebot",
+    "description": "Panel del bot de trading en papel",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0e1116",
+    "theme_color": "#0e1116",
+    "orientation": "portrait",
+    "icons": [
+        {"src": "/icono.svg", "sizes": "any", "type": "image/svg+xml",
+         "purpose": "any maskable"}
+    ],
+}
+
+
 def _dec(x) -> str:
     return str(x)
 
@@ -208,6 +247,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):  # noqa: N802 - lo impone BaseHTTPRequestHandler
         if self.path == "/":
             self._responder(200, PAGINA.encode(), "text/html; charset=utf-8")
+        elif self.path == "/manifest.json":
+            self._responder(200, json.dumps(MANIFEST).encode(),
+                            "application/manifest+json; charset=utf-8")
+        elif self.path == "/icono.svg":
+            self._responder(200, ICONO.encode(), "image/svg+xml; charset=utf-8")
         elif self.path == "/api/estado":
             datos = json.dumps(self._estado(), default=str).encode()
             self._responder(200, datos, "application/json; charset=utf-8")
