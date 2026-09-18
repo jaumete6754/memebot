@@ -190,5 +190,87 @@ class TestPersistencia(unittest.TestCase):
             s2.cerrar()
 
 
+class TestIncidente001(unittest.TestCase):
+    """INCIDENTE 001 (19/09/2026) - mezcla de modos sintetico y real.
+
+    Arrancar en sintetico y luego en real reutilizaba la misma base de datos.
+    El bot recuperaba posiciones abiertas a precios inventados y las cerraba
+    contra precios reales: perdidas falsas del -67% y kill-switch disparado.
+
+    Estos tests reproducen el fallo y verifican las dos capas de arreglo.
+    """
+
+    def test_la_base_recuerda_su_modo(self):
+        """Capa 1: la base de datos sabe en que modo se creo."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "t.db"
+            s1 = Store(ruta)
+            s1.set_estado("modo_feed", "sintetico")
+            s1.cerrar()
+
+            s2 = Store(ruta)
+            self.assertEqual(s2.get_estado("modo_feed"), "sintetico")
+            # run.py aborta cuando esto no coincide con el modo actual.
+            self.assertNotEqual(s2.get_estado("modo_feed"), "real")
+            s2.cerrar()
+
+    def test_posicion_con_precio_absurdo_se_anula(self):
+        """Capa 2: una posicion recuperada a precio imposible no se cierra, se anula."""
+        from engine import Bot, ConfigMotor
+        from feed import FeedSintetico
+        from modelo import Posicion
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "t.db")
+            # Posicion guardada a precio 1.0 (sintetico); el mercado esta a 0.30.
+            store.guardar_posicion(Posicion(
+                id=0, motor=Motor.SATELITE, simbolo="WIFUSDT",
+                cantidad=Decimal("8"), precio_entrada=Decimal("1.0"),
+                entrada_ms=0, stop_loss=Decimal("0.98"),
+                take_profit=Decimal("1.1"), stop_inicial=Decimal("0.98"),
+                max_precio_visto=Decimal("1.0"), regla="exploracion",
+            ))
+
+            broker = BrokerPapel({Motor.NUCLEO: Decimal("110"),
+                                  Motor.SATELITE: Decimal("32")})
+            bot = Bot(FeedSintetico(["WIFUSDT"]), broker, _riesgo(), store,
+                      [ConfigMotor(Motor.SATELITE, ["WIFUSDT"], [])])
+            self.assertEqual(len(bot.posiciones), 1)
+
+            bot._validar_recuperadas({"WIFUSDT": Decimal("0.30")})
+
+            # La posicion desaparece SIN generar una operacion falsa.
+            self.assertEqual(len(bot.posiciones), 0)
+            self.assertEqual(len(store.operaciones()), 0)
+            # Y queda registrado como incidente critico.
+            tipos = [i["tipo"] for i in store.incidentes()]
+            self.assertIn("posicion_anulada", tipos)
+            store.cerrar()
+
+    def test_posicion_con_precio_normal_se_conserva(self):
+        """Una variacion normal de mercado NO debe anular la posicion."""
+        from engine import Bot, ConfigMotor
+        from feed import FeedSintetico
+        from modelo import Posicion
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Store(Path(tmp) / "t.db")
+            store.guardar_posicion(Posicion(
+                id=0, motor=Motor.SATELITE, simbolo="WIFUSDT",
+                cantidad=Decimal("8"), precio_entrada=Decimal("1.0"),
+                entrada_ms=0, stop_loss=Decimal("0.95"),
+                take_profit=Decimal("1.1"), stop_inicial=Decimal("0.95"),
+                max_precio_visto=Decimal("1.0"), regla="exploracion",
+            ))
+            broker = BrokerPapel({Motor.SATELITE: Decimal("32")})
+            bot = Bot(FeedSintetico(["WIFUSDT"]), broker, _riesgo(), store,
+                      [ConfigMotor(Motor.SATELITE, ["WIFUSDT"], [])])
+
+            bot._validar_recuperadas({"WIFUSDT": Decimal("0.88")})   # -12%
+
+            self.assertEqual(len(bot.posiciones), 1)
+            store.cerrar()
+
+
 if __name__ == "__main__":
     unittest.main()

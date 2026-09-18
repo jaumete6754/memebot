@@ -59,11 +59,40 @@ def main() -> int:
                     help="fuerza feed sintetico, sin conexion")
     ap.add_argument("--rapido", action="store_true",
                     help="ciclos de 5 s en vez de 60")
-    ap.add_argument("--datos", default=str(RAIZ / "datos" / "memebot.db"))
+    ap.add_argument("--datos", default=None,
+                    help="ruta de la base de datos (por defecto, una por modo)")
     args = ap.parse_args()
 
     cfg = cargar_config(Path(args.config))
-    store = Store(args.datos)
+
+    # INCIDENTE 001 (19/09/2026): arrancar en sintetico y despues en real
+    # reutilizaba la misma base de datos. El bot recuperaba del disco posiciones
+    # abiertas a precios inventados y las cerraba contra precios reales,
+    # produciendo perdidas falsas del -67% y disparando el kill-switch.
+    #
+    # Arreglo en dos capas:
+    #   1) cada modo tiene su propia base de datos por defecto
+    #   2) si aun asi se mezclan, se detecta y se aborta antes de operar
+    usar_sintetico = args.sintetico or cfg.get("modo_feed") == "sintetico"
+    modo = "sintetico" if usar_sintetico else "real"
+
+    ruta_datos = Path(args.datos) if args.datos else RAIZ / "datos" / f"memebot-{modo}.db"
+    store = Store(ruta_datos)
+
+    modo_previo = store.get_estado("modo_feed")
+    if modo_previo is not None and modo_previo != modo:
+        print(f"""
+  ABORTADO: esta base de datos se creo en modo '{modo_previo}' y ahora
+  arrancas en modo '{modo}'.
+
+  Mezclarlos falsea los resultados: las posiciones abiertas a precios de un
+  modo se cerrarian contra precios del otro.
+
+  Usa una base distinta, o borra la actual:
+      rm {ruta_datos}
+""")
+        return 1
+    store.set_estado("modo_feed", modo)
 
     # ------------------------------------------------------------ simbolos
     simbolos_por_motor = {
@@ -73,7 +102,6 @@ def main() -> int:
     todos = [s for lista in simbolos_por_motor.values() for s in lista]
 
     # ---------------------------------------------------------------- feed
-    usar_sintetico = args.sintetico or cfg.get("modo_feed") == "sintetico"
     if usar_sintetico:
         feed = FeedSintetico(todos)
         print("Feed SINTETICO: los precios son inventados. Solo para probar la fontaneria.")
@@ -141,7 +169,7 @@ def main() -> int:
 
     print(f"""
   Dashboard:  http://localhost:{puerto}
-  Base datos: {args.datos}
+  Base datos: {ruta_datos}
   Capital:    nucleo {cap_nucleo} + satelite {cap_satelite} USDT (VIRTUALES)
   Ciclo:      cada {intervalo} s
   Exploracion:{' activada' if cfg.get('exploracion') else ' desactivada'}

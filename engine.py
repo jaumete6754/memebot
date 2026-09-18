@@ -39,6 +39,12 @@ from modelo import (
 )
 
 
+# Desvio maximo tolerable entre el precio de entrada de una posicion recuperada
+# del disco y el precio de mercado actual. Por encima de esto, la posicion no es
+# creible y se anula (ver _validar_recuperadas).
+DESVIO_MAX_RECUPERACION = Decimal("0.40")
+
+
 class ConfigMotor:
     def __init__(self, motor: Motor, simbolos: list[str], estrategias: list[Estrategia]):
         self.motor = motor
@@ -72,6 +78,7 @@ class Bot:
         self.arrancado_ms = ahora_ms()
         self._parar = threading.Event()
         self._cache_velas: dict[str, list[Vela]] = {}
+        self._validadas = not self.posiciones
 
         if self.posiciones:
             store.incidente(
@@ -106,6 +113,40 @@ class Bot:
             Decimal("0"),
         )
 
+    def _validar_recuperadas(self, precios: dict[str, Decimal]) -> None:
+        """Anula posiciones recuperadas cuyo precio de entrada no cuadra con el mercado.
+
+        INCIDENTE 001: al reutilizar la base de datos entre modos, el bot
+        recupero posiciones abiertas a precios inventados y las cerro contra
+        precios reales, generando perdidas falsas del -67%.
+
+        La causa ya esta cubierta (una base de datos por modo). Esto es la
+        segunda capa: si por lo que sea una posicion recuperada esta a un
+        precio absurdo, se ANULA -- se devuelve el capital y se registra el
+        incidente -- en vez de cerrarla y contaminar las estadisticas con una
+        operacion que nunca existio.
+        """
+        for pos in list(self.posiciones):
+            precio = precios.get(pos.simbolo)
+            if precio is None or pos.precio_entrada <= 0:
+                continue
+            desvio = abs(precio - pos.precio_entrada) / pos.precio_entrada
+            if desvio <= DESVIO_MAX_RECUPERACION:
+                continue
+
+            # Devolver el capital tal cual entro: la operacion se considera nula.
+            self.broker.vender(pos.motor, pos.simbolo, pos.cantidad, pos.precio_entrada)
+            self.posiciones.remove(pos)
+            if pos.id is not None:
+                self.store.borrar_posicion(pos.id)
+            self.store.incidente(
+                "posicion_anulada",
+                f"{pos.simbolo}: entrada {pos.precio_entrada} contra mercado "
+                f"{precio} ({desvio * 100:.0f}% de desvio). Posicion anulada y "
+                f"capital devuelto; no se registra como operacion.",
+                "critico",
+            )
+
     # ------------------------------------------------------------- decisiones
 
     def _registrar(self, motor: Motor, simbolo: str, accion: str, senal: Senal,
@@ -124,6 +165,10 @@ class Bot:
         except ErrorFeed as e:
             self.store.incidente("ciclo_sin_precios", str(e), "error")
             return
+
+        if not self._validadas:
+            self._validar_recuperadas(precios)
+            self._validadas = True
 
         self._revisar_salidas(precios)
         self._buscar_entradas(precios)
